@@ -44,7 +44,7 @@ def main():
 
     while True:
         print("1. Delete a server")
-        print("2. Add another server")
+        print("2. Add a server")
         print("3. Cancel")
         choice = input("Select an option: ")
 
