@@ -5,14 +5,21 @@ There are two scripts in this repo - config and main.
 
 The config will make a config.txt file that will hold your configurations with this schema:
 ```
-[
-    {
-        "ip": "xxx.xxx.xxx.xxx",
-        "username": "xxxx",
-        "password": "xxxx",
-        "nickname": "xxxxxx"
-    },
-]
+{
+    "servers": [
+        {
+            "ip": "xxx.xxx.xxx.xxx",
+            "username": "xxxxx",
+            "password": "xxxxx",
+            "nickname": "xxxxx"
+        }
+    ],
+    "groups": {
+        "cumulus-home": [
+            "xxx.xxx.xxx.xxx"
+        ]
+    }
+}
 ```
 
 The main script will check if there is a config, and then will let you choose from several actions. Right now, these actions are two:
@@ -32,6 +39,6 @@ Each action can be executed for one or more nodes, depending on your needs.
 ## TODO
 
 - [ ] Create interactive server select
-- [ ] Create server groups
+- [x] Create server groups
 - [ ] Add more functions
 - [ ] Add a check for the SSH when adding a server
