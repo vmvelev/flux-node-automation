@@ -2,7 +2,6 @@ import json
 import os
 import subprocess
 from paramiko import SSHClient, AutoAddPolicy
-from prompt_toolkit.shortcuts import checkboxlist_dialog
 
 
 def list_servers_to_choose(servers):
@@ -15,23 +14,15 @@ def list_servers_to_choose(servers):
 
 
 def get_selected_servers(servers):
-    choices = [
-        (
-            server,
-            server.get("nickname", server["ip"])
-            if "nickname" in server
-            else server["ip"],
-        )
-        for server in servers
+    list_servers_to_choose(servers)
+    selected_indices = input(
+        "Select servers by typing their numbers separated by spaces: "
+    ).split()
+    return [
+        servers[int(idx) - 1]
+        for idx in selected_indices
+        if idx.isdigit() and 1 <= int(idx) <= len(servers)
     ]
-
-    selected_servers = checkboxlist_dialog(
-        title="Select servers",
-        text="Use arrow keys to navigate and spacebar to select:",
-        values=choices,
-    ).run()
-
-    return selected_servers
 
 
 def execute_commands(ssh, commands):
