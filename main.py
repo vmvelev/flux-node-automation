@@ -84,7 +84,8 @@ def main():
         print("What do you want to do?")
         print("1. Update node")
         print("2. Restart node")
-        print("3. Cancel")
+        print("3. Update server list")
+        print("4. Exit")
         choice = input("Enter your choice: ")
 
         if choice in ["1", "2"]:
@@ -95,6 +96,8 @@ def main():
                 elif choice == "2":
                     restartNode(server)
         elif choice == "3":
+            subprocess.run(["python", "config.py"])
+        elif choice == "4":
             print("Exiting.")
             break
 
