@@ -30,7 +30,8 @@ Each action can be executed for one or more nodes, depending on your needs.
 5. Run the script - `python main.py` for Windows and `python3 main.py` for UNIX.
 
 ## TODO
-[] Create interactive server select
-[] Create server groups
-[] Add more functions
-[] Add a check for the SSH when adding a server
+
+- [ ] Create interactive server select
+- [ ] Create server groups
+- [ ] Add more functions
+- [ ] Add a check for the SSH when adding a server
