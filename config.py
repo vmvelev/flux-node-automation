@@ -35,32 +35,70 @@ def delete_server(servers):
             return servers
 
 
+def assign_server_to_group(config):
+    if not config["servers"]:
+        print("No servers available!")
+        return
+    for idx, server in enumerate(config["servers"], start=1):
+        print(f"{idx}. {server['nickname']} ({server['ip']})")
+
+    server_choice = int(input("Select a server to assign to a group: ")) - 1
+    server_ip = config["servers"][server_choice]["ip"]
+
+    for idx, group in enumerate(config["groups"].keys(), start=1):
+        print(f"{idx}. {group}")
+
+    group_choice = int(input("Select a group: ")) - 1
+    group_name = list(config["groups"].keys())[group_choice]
+
+    if server_ip in config["groups"][group_name]:
+        print(f"Server with IP {server_ip} is already in {group_name}!")
+        return
+
+    config["groups"][group_name].append(server_ip)
+    print(f"Server with IP {server_ip} added to {group_name}!")
+
+
+def create_group(config):
+    group_name = input("Enter the name for the new group: ")
+    if group_name in config["groups"]:
+        print("Group with this name already exists!")
+        return
+    config["groups"][group_name] = []
+    print(f"Group '{group_name}' created!")
+
+
 def main():
     if os.path.exists("config.txt"):
         with open("config.txt", "r") as infile:
-            servers = json.load(infile)
+            config = json.load(infile)
     else:
-        servers = []
+        config = {"servers": [], "groups": {}}
 
     while True:
         print("1. Delete a server")
         print("2. Add a server")
-        print("3. Cancel")
+        print("3. Create a group")
+        print("4. Assign server to a group")
+        print("5. Cancel")
         choice = input("Select an option: ")
 
-        if choice == "1" and servers:
-            servers = delete_server(servers)
-            with open("config.txt", "w") as outfile:
-                json.dump(servers, outfile, indent=4)
-        elif choice == "1" and not servers:
+        if choice == "1" and config["servers"]:
+            config["servers"] = delete_server(config["servers"])
+        elif choice == "1" and not config["servers"]:
             print("No servers available to delete.")
         elif choice == "2":
             server = ask_server_details()
-            servers.append(server)
-            with open("config.txt", "w") as outfile:
-                json.dump(servers, outfile, indent=4)
+            config["servers"].append(server)
         elif choice == "3":
+            create_group(config)
+        elif choice == "4":
+            assign_server_to_group(config)
+        elif choice == "5":
             break
+
+        with open("config.txt", "w") as outfile:
+            json.dump(config, outfile, indent=4)
 
 
 if __name__ == "__main__":
