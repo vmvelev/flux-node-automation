@@ -2,6 +2,9 @@ import json
 import os
 import subprocess
 from paramiko import SSHClient, AutoAddPolicy
+from paramiko.ssh_exception import SSHException
+from paramiko.rsakey import RSAKey
+import getpass
 
 
 def list_servers_to_choose(options):
@@ -48,25 +51,107 @@ def execute_commands(ssh, commands):
 def updateFluxNode(server):
     with SSHClient() as ssh:
         ssh.set_missing_host_key_policy(AutoAddPolicy())
-        ssh.connect(
-            server["ip"], username=server["username"], password=server["password"]
-        )
-        commands = [
-            "sudo apt-get update -y",
-            "sudo apt-get --with-new-pkgs upgrade -y && sudo apt autoremove -y && cd && cd zelflux && git checkout . && git checkout master && git reset --hard origin/master && git pull",
-            "sudo reboot",
-        ]
-        execute_commands(ssh, commands)
+        try:
+            commands = [
+                "sudo apt-get update -y",
+                "sudo apt-get --with-new-pkgs upgrade -y && sudo apt autoremove -y && cd && cd zelflux && git checkout . && git checkout master && git reset --hard origin/master && git pull",
+                "sudo reboot",
+            ]
+            if server.get("use_key", False):
+                try:
+                    # Attempt to load the key without a passphrase
+                    pkey = RSAKey(filename="./keys/id_rsa")
+                except SSHException:
+                    # If loading fails, it might be encrypted. Prompt for passphrase and try again.
+                    passphrase = getpass.getpass(
+                        "Enter the passphrase for the private key: "
+                    )
+                    pkey = RSAKey(filename="./keys/id_rsa", password=passphrase)
+
+                ssh.connect(
+                    server["ip"],
+                    username=server["username"],
+                    pkey=pkey,  # Use the unlocked private key
+                )
+                execute_commands(ssh, commands)
+            else:
+                ssh.connect(
+                    server["ip"],
+                    username=server["username"],
+                    password=server["password"],
+                )
+                execute_commands(ssh, commands)
+        except Exception as e:
+            print(f"Failed to connect to {server['ip']}. Reason: {str(e)}")
 
 
 def restartNode(server):
     with SSHClient() as ssh:
-        ssh.set_missing_host_key_policy(AutoAddPolicy())
-        ssh.connect(
-            server["ip"], username=server["username"], password=server["password"]
-        )
-        commands = ["sudo reboot"]
-        execute_commands(ssh, commands)
+        try:
+            ssh.set_missing_host_key_policy(AutoAddPolicy())
+            commands = ["sudo reboot"]
+            # Determine the method of authentication
+            if server.get("use_key", False):
+                try:
+                    # Attempt to load the key without a passphrase
+                    pkey = RSAKey(filename="./keys/id_rsa")
+                except SSHException:
+                    # If loading fails, it might be encrypted. Prompt for passphrase and try again.
+                    passphrase = getpass.getpass(
+                        "Enter the passphrase for the private key: "
+                    )
+                    pkey = RSAKey(filename="./keys/id_rsa", password=passphrase)
+
+                ssh.connect(
+                    server["ip"],
+                    username=server["username"],
+                    pkey=pkey,  # Use the unlocked private key
+                )
+                execute_commands(ssh, commands)
+            else:
+                ssh.connect(
+                    server["ip"],
+                    username=server["username"],
+                    password=server["password"],
+                )
+                execute_commands(ssh, commands)
+        except Exception as e:
+            print(f"Failed to connect to {server['ip']}. Reason: {str(e)}")
+
+
+def test_connection(server):
+    """Test the connection to a given server."""
+    with SSHClient() as ssh:
+        try:
+            ssh.set_missing_host_key_policy(AutoAddPolicy())
+
+            # Determine the method of authentication
+            if server.get("use_key", False):
+                try:
+                    # Attempt to load the key without a passphrase
+                    pkey = RSAKey(filename="./keys/id_rsa")
+                except SSHException:
+                    # If loading fails, it might be encrypted. Prompt for passphrase and try again.
+                    passphrase = getpass.getpass(
+                        "Enter the passphrase for the private key: "
+                    )
+                    pkey = RSAKey(filename="./keys/id_rsa", password=passphrase)
+
+                ssh.connect(
+                    server["ip"],
+                    username=server["username"],
+                    pkey=pkey,  # Use the unlocked private key
+                )
+            else:
+                ssh.connect(
+                    server["ip"],
+                    username=server["username"],
+                    password=server["password"],
+                )
+
+            print(f"Successfully connected to {server['ip']}!")
+        except Exception as e:
+            print(f"Failed to connect to {server['ip']}. Reason: {str(e)}")
 
 
 def get_servers_from_groups(config, group_names):
@@ -121,7 +206,8 @@ def main():
         print("1. Update node")
         print("2. Restart node")
         print("3. Update server list")
-        print("4. Exit")
+        print("4. Test connection")
+        print("5. Exit")
         choice = input("Enter your choice: ")
 
         if choice in ["1", "2"]:
@@ -155,6 +241,19 @@ def main():
         elif choice == "3":
             subprocess.run(["python", "config.py"])
         elif choice == "4":
+            target_choice = input("Do you want to target a (1) Server or a (2) Group? ")
+
+            if target_choice == "1":
+                selected_options = get_selected_servers(config["servers"])
+                for server in selected_options:
+                    test_connection(server)
+            elif target_choice == "2":
+                selected_group_names = get_selected_groups(config["groups"])
+                selected_servers = get_servers_from_groups(config, selected_group_names)
+                for server in selected_servers:
+                    test_connection(server)
+
+        elif choice == "5":
             print("Exiting.")
             break
 
